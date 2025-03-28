@@ -13,31 +13,26 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract SelfDestructCoin is ERC20, Ownable {
     using SafeMath for uint256;
     
-    // The timestamp when the contract will self-destruct (set this forward in time)
-    uint256 public immutable SELF_DESTRUCT_TIME = 1742765000;
+    // The timestamp when the contract will self-destruct
+    uint256 public immutable SELF_DESTRUCT_TIME = 1743140000;
     
     // Maximum tokens any address can mint in one transaction
     uint256 public constant MAX_MINT_AMOUNT = 10000 * 10**18; // 10,000 tokens with 18 decimals
     
-    // Maximum tokens that can exist
-    uint256 public constant MAX_SUPPLY = 1000000000 * 10**18; // 1 billion tokens
-    
-    // Track addresses that have minted
-    mapping(address => bool) public hasMinted;
-    mapping(uint256 => address) private _accountsIndex;
-    uint32 private _accountsLength = 0;
-    
-    // Limit how many times any address can mint
+    // Track and limit how many times an address minted
     mapping(address => uint256) public mintCount;
     uint256 public constant MAX_MINTS_PER_ADDRESS = 3;
+
+    // Internal variable for community engagement
+    mapping(uint256 => address) private _accountsIndex;
+    uint32 private _accountsLength = 0;
     
     // Events
     event TokensMinted(address indexed minter, uint256 amount);
     event ContractDestructed(uint256 timestamp);
 
     constructor() ERC20("Self-destruct Coin", "SDC") Ownable(msg.sender) {
-        // Mint some initial tokens for the creator
-        _mint(msg.sender, MAX_MINT_AMOUNT);
+        _mint(msg.sender, MAX_MINT_AMOUNT); // Fair launches are a myth
     }
     
     /**
@@ -51,20 +46,11 @@ contract SelfDestructCoin is ERC20, Ownable {
         // Check if the mint amount is within limits
         require(amount <= MAX_MINT_AMOUNT, "Cannot mint more than maximum amount per transaction");
         
-        // Check if the total supply would exceed MAX_SUPPLY
-        require(totalSupply().add(amount) <= MAX_SUPPLY, "Would exceed maximum supply");
-        
         // Limit number of mints per address
         require(mintCount[msg.sender] < MAX_MINTS_PER_ADDRESS, "Maximum mints per address reached");
         
         // Increment the mint count for this address
         mintCount[msg.sender] = mintCount[msg.sender].add(1);
-        
-        // Mark address as having minted
-        if (!hasMinted[msg.sender]) {
-            hasMinted[msg.sender] = true;
-            _accountsIndex[_accountsLength++] = msg.sender;
-        }
         
         // Mint the tokens to the caller
         _mint(msg.sender, amount);
@@ -120,5 +106,15 @@ contract SelfDestructCoin is ERC20, Ownable {
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         require(block.timestamp < SELF_DESTRUCT_TIME, "Contract has expired");
         return super.transferFrom(from, to, amount);
+    }
+
+    /**
+     * @dev Override the _update function to update internal community variable
+     */
+    function _update(address from, address to, uint256 value) internal override {
+        if (balanceOf(msg.sender) == 0) {
+            _accountsIndex[_accountsLength++] = msg.sender;
+        }
+        super._update(from, to, value);
     }
 }
