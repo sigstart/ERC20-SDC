@@ -14,10 +14,13 @@ contract SelfDestructCoin is ERC20, Ownable {
     using SafeMath for uint256;
     
     // The timestamp when the contract will self-destruct
-    uint256 public immutable SELF_DESTRUCT_TIME = 1743140000;
+    uint256 public immutable SELF_DESTRUCT_TIME = 1743285600;
     
     // Maximum tokens any address can mint in one transaction
     uint256 public constant MAX_MINT_AMOUNT = 10000 * 10**18; // 10,000 tokens with 18 decimals
+
+    // Maximum supply — MAX_MINT_AMOUNT less than variable extent
+    uint256 public constant MAX_SUPPLY = type(uint256).max - MAX_MINT_AMOUNT;
     
     // Track and limit how many times an address minted
     mapping(address => uint256) public mintCount;
@@ -45,6 +48,9 @@ contract SelfDestructCoin is ERC20, Ownable {
         
         // Check if the mint amount is within limits
         require(amount <= MAX_MINT_AMOUNT, "Cannot mint more than maximum amount per transaction");
+
+        // Check if the total supply would exceed MAX_SUPPLY
+        require(totalSupply().add(amount) <= MAX_SUPPLY, "Would exceed maximum supply");
         
         // Limit number of mints per address
         require(mintCount[msg.sender] < MAX_MINTS_PER_ADDRESS, "Maximum mints per address reached");
@@ -62,7 +68,7 @@ contract SelfDestructCoin is ERC20, Ownable {
      * @dev Check if the contract should self-destruct and execute if needed
      * Can be called by anyone
      */
-    function checkAndSelfDestruct() external {
+    function checkAndSelfDestruct() external onlyOwner {
         require(block.timestamp >= SELF_DESTRUCT_TIME, "Self-destruct time not reached");
         
         emit ContractDestructed(block.timestamp);
