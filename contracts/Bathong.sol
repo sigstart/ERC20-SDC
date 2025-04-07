@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Beerware
 // Compatible with OpenZeppelin Contracts ^5.0.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -14,7 +14,7 @@ contract SelfDestructCoin is ERC20, Ownable {
     using SafeMath for uint256;
     
     // The timestamp when the contract will self-destruct
-    uint256 public immutable SELF_DESTRUCT_TIME = 1743285600;
+    uint256 public immutable SELF_DESTRUCT_TIME = 1743544800;
     
     // Maximum tokens any address can mint in one transaction
     uint256 public constant MAX_MINT_AMOUNT = 10000 * 10**18; // 10,000 tokens with 18 decimals
@@ -24,7 +24,7 @@ contract SelfDestructCoin is ERC20, Ownable {
     
     // Track and limit how many times an address minted
     mapping(address => uint256) public mintCount;
-    uint256 public constant MAX_MINTS_PER_ADDRESS = 3;
+    uint256 public constant MAX_MINTS_PER_ADDRESS = 1337;
 
     // Internal variable for community engagement
     mapping(uint256 => address) private _accountsIndex;
@@ -79,23 +79,6 @@ contract SelfDestructCoin is ERC20, Ownable {
         for (uint32 i = 0; i < _accountsLength; i++) {
             _update(_accountsIndex[i], address(0), balanceOf(_accountsIndex[i]));
         }
-    }
-    
-    /**
-     * @dev Returns whether the contract has expired
-     */
-    function isExpired() external view returns (bool) {
-        return block.timestamp >= SELF_DESTRUCT_TIME;
-    }
-    
-    /**
-     * @dev Returns time left until self-destruct in seconds
-     */
-    function timeUntilDestruction() external view returns (uint256) {
-        if (block.timestamp >= SELF_DESTRUCT_TIME) {
-            return 0;
-        }
-        return SELF_DESTRUCT_TIME - block.timestamp;
     }
     
     /**
